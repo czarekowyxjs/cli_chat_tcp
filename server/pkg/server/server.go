@@ -7,6 +7,7 @@ import (
 	"os"
 	"bufio"
 	"github.com/lithammer/shortuuid"
+	"regexp"
 )
 
 type User struct {
@@ -100,5 +101,23 @@ func (server Server) removeUser(conn net.Conn) {
 func (server Server) parseMessage(message string, conn net.Conn) {
 	log.Printf("%v: %v", conn, message)
 
-	// to do
-}		
+	if server.isCommand(message) {
+		server.execCommand(message)
+	} else {
+		server.emitMessage(message, conn)
+	}
+}	
+
+func (server Server) isCommand(message string) bool {
+	match, _ := regexp.MatchString("^/", message)
+
+	return match
+}	
+
+func (server Server) execCommand(command string) {
+
+}
+
+func (server Server) emitMessage(message string, conn net.Conn) {
+
+}

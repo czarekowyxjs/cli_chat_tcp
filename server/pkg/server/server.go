@@ -20,6 +20,7 @@ type Server struct {
 	host string
 	port int
 	users []User
+	commands map[string]func(string, net.Conn)
 }
 
 func New(host string, port int) Server {
@@ -27,6 +28,7 @@ func New(host string, port int) Server {
 		host: host,
 		port: port,
 		users: make([]User, 0),
+		commands: make(map[string]func(string, net.Conn), 0),
 	}
 }
 
@@ -39,6 +41,7 @@ func (server Server) Run() {
 	}
 	log.Println("Server is listening...")
 
+	server.loadCommands()
 	server.loop(listener)
 }
 
@@ -102,7 +105,7 @@ func (server Server) parseMessage(message string, conn net.Conn) {
 	log.Printf("%v: %v", conn, message)
 
 	if server.isCommand(message) {
-		server.execCommand(message)
+		server.emitCommand(message, conn)
 	} else {
 		server.emitMessage(message, conn)
 	}
@@ -114,10 +117,55 @@ func (server Server) isCommand(message string) bool {
 	return match
 }	
 
-func (server Server) execCommand(command string) {
+func (server Server) emitCommand(command string, conn net.Conn) {
+	parsedCommand := server.parseCommand(command)
 
+	if parsedCommand != nil {
+
+		server.selectCommand(parsedCommand[1], parsedCommand[2], conn)
+
+	} else {
+		//handle error - empty command
+	}
 }
 
 func (server Server) emitMessage(message string, conn net.Conn) {
 
+}
+
+func (server Server) join(username string, conn net.Conn) {
+	userExists := true
+
+	for i := 0; i < len(server.users); i++ {
+		if server.users[i].connection == conn {
+			server.users[i].username = username
+			userExists = false
+			break
+		}
+	}
+
+	if(userExists) {
+		//emitMessageToUser - username already exists
+	} else {
+		//emitMessageToUser - succesfully joined
+	}
+}
+
+func (server Server) loadCommands() {
+	server.commands["join"] = server.join
+}
+
+func (server Server) parseCommand(command string) []string {
+	re := regexp.MustCompile(`^/([a-zA-Z]+)\s+([[:print:]]+)`)
+	matches := re.FindStringSubmatch(command)
+
+	return matches
+}
+
+func (server Server) selectCommand(name string, content string, conn net.Conn) {
+	if commandFunc, found := server.commands[name]; found {
+		commandFunc(content, conn)
+	} else {
+		//handle error - command not found
+	}
 }

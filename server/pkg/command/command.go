@@ -27,6 +27,8 @@ func New(command string, conn net.Conn, serverCommands map[string]func(string, n
 }
 
 func (c *Command) Exec() {
+	log.Print(c.command)
+	
 	if c.isExecutable() {
 		c.executeCommand()
 	}

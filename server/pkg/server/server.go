@@ -54,7 +54,7 @@ func (server *Server) loop(listener net.Listener) {
 }
 
 func (server *Server) handleConnection(conn net.Conn) {
-	go server.newConnection(conn)
+	server.newConnection(conn)
 
 	for {
 		message, err := bufio.NewReader(conn).ReadString('\n')
@@ -82,8 +82,13 @@ func (server *Server) removeConnection(conn net.Conn) {
 	server.users = user.RemoveUserByConnection(server.users, conn)
 }
 
+func (server *Server) sendMessage(content string, conn net.Conn) {
+	conn.Write([]byte(content+"\n"))
+}
+
 func (server *Server) initCommands() {
 	server.commands["join"] = server.join
+	server.commands["message"] = server.message
 }
 
 func (server *Server) join(username string, conn net.Conn) {
@@ -91,8 +96,14 @@ func (server *Server) join(username string, conn net.Conn) {
 
 	if err != nil {
 		log.Print(err)
-		//send information about this error to user
+		server.sendMessage("101 SERVER Username already exists", conn)
+	} else {
+		server.sendMessage("100 SERVER Successfully joined", conn)
 	}
 
 	server.users = users
+}
+
+func (server *Server) message(content string, conn net.Conn) {
+
 }
